@@ -1,0 +1,23 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+data = np.array([
+    [4,11],
+    [8,4],
+    [13,5],
+    [7,14]   
+])
+pca = PCA(n_components=1)
+pca.fit(data)
+new_values = pca.transform(data)
+singular_values = pca.singular_values_[0]
+eigenvector = pca.components_
+print("Original data:")
+print(data)
+print("\nTransformed data (reduced to 1 component):")
+print(new_values)
+print("\nSingular Value:")
+print(singular_values)
+print("\nEigenvector (Principal Component):")
+print(eigenvector)
+

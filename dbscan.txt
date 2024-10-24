@@ -1,0 +1,25 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn.datasets import make_blobs
+from sklearn.preprocessing import StandardScaler
+
+X, y_true = make_blobs(n_samples=1500, n_features=2, centers=3, random_state=42)
+X = StandardScaler().fit_transform(X)
+
+
+db = DBSCAN(eps=0.3, min_samples=10).fit(X)
+labels = db.labels_
+
+
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+
+
+unique_labels = set(labels)
+colors = ['y', 'b', 'g', 'r', 'c', 'm', 'k'] 
+for k, col in zip(unique_labels, colors):
+    class_member_mask = (labels == k)
+    plt.plot(X[class_member_mask, 0], X[class_member_mask, 1], 'o', markerfacecolor=col, markersize=6)
+plt.title(f'Number of clusters: {n_clusters_}')
+plt.show()

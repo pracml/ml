@@ -1,0 +1,33 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from math import exp
+
+# Input data
+x1 = list(map(float, input("Enter Annual Income (Lakhs): ").split())) 
+x2 = list(map(float, input("Enter Savings (Lakhs): ").split())) 
+y = list(map(int, input("Enter Loan Sanction (0 or 1): ").split())) 
+
+# Ensure input lengths are valid
+if len(x1) != len(x2) or len(x1) != len(y):
+    print("Error: Mismatched input lengths.")
+    exit()
+
+# Initialize coefficients and learning rate
+b0, b1, b2 = 0, 0, 0
+alpha = 0.3
+
+# Train the logistic regression model using gradient descent
+for i in range(len(x1)):
+    pred = 1 / (1 + exp(-(b0 + b1 * x1[i] + b2 * x2[i])))
+    error = y[i] - pred
+    b0 += alpha * error * pred * (1 - pred)
+    b1 += alpha * error * pred * (1 - pred) * x1[i]
+    b2 += alpha * error * pred * (1 - pred) * x2[i]
+
+# Test the model with new input
+testx1 = float(input("Enter Annual Income (Lakhs) for testing: ")) 
+testx2 = float(input("Enter Savings (Lakhs) for testing: ")) 
+test_pred = 1 / (1 + exp(-(b0 + b1 * testx1 + b2 * testx2)))
+
+# Output prediction
+print("Loan Sanctioned" if test_pred > 0.5 else "Loan Not Sanctioned")

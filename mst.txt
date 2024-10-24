@@ -1,0 +1,84 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import networkx as nx
+from sklearn.datasets import make_blobs
+from sklearn.cluster import DBSCAN
+
+class MSTClustering:
+    def __init__(self, cutoff_scale=2):
+        self.cutoff_scale = cutoff_scale
+        self.labels_ = None
+        self.X_fit_ = None
+    
+    def fit_predict(self, X):
+        self.X_fit_ = X
+        # Create a graph from the data points
+        self.graph = nx.Graph()
+        
+        # Add edges between all points with their distances
+        for i in range(len(X)):
+            for j in range(i + 1, len(X)):
+                dist = np.linalg.norm(X[i] - X[j])
+                self.graph.add_edge(i, j, weight=dist)
+
+        # Create a minimum spanning tree from the graph
+        mst = nx.minimum_spanning_tree(self.graph)
+
+        # Find clusters based on the cutoff scale
+        clusters = {}
+        for u, v, data in mst.edges(data=True):
+            if data['weight'] <= self.cutoff_scale:
+                clusters.setdefault(u, []).append(v)
+                clusters.setdefault(v, []).append(u)
+
+        self.labels_ = np.full(X.shape[0], -1)
+        cluster_id = 0
+        for key in clusters.keys():
+            if self.labels_[key] == -1:  # Not yet labeled
+                self.labels_[key] = cluster_id
+                self._label_cluster(clusters, key, cluster_id)
+                cluster_id += 1
+
+        return self.labels_
+
+    def _label_cluster(self, clusters, key, cluster_id):
+        to_visit = [key]
+        while to_visit:
+            node = to_visit.pop()
+            for neighbor in clusters.get(node, []):
+                if self.labels_[neighbor] == -1:  # Not yet labeled
+                    self.labels_[neighbor] = cluster_id
+                    to_visit.append(neighbor)
+
+    def get_graph_segments(self, full_graph=False):
+        edges = self.graph.edges(data=True)
+        if full_graph:
+            segments = np.array([(self.X_fit_[u], self.X_fit_[v]) for u, v, _ in edges])
+        else:
+            mst_edges = nx.minimum_spanning_tree(self.graph).edges()
+            segments = np.array([(self.X_fit_[u], self.X_fit_[v]) for u, v in mst_edges])
+        return segments.T
+
+# Create synthetic data
+X, _ = make_blobs(n_samples=200, centers=6, cluster_std=0.60, random_state=0)
+
+# Apply MST Clustering
+model = MSTClustering(cutoff_scale=2)
+labels = model.fit_predict(X)
+
+# Plotting the results
+def plot_mst(model, cmap='rainbow'):
+    X = model.X_fit_
+    fig, ax = plt.subplots(1, 2, figsize=(16, 6), sharex=True, sharey=True)
+    for axi, full_graph, colors in zip(ax, [True, False], ['lightblue', model.labels_]):
+        segments = model.get_graph_segments(full_graph=full_graph)
+        axi.plot(segments[0], segments[1], '-k', zorder=1, lw=1)
+        axi.scatter(X[:, 0], X[:, 1], c=colors, cmap=cmap, zorder=2)
+        axi.axis('tight')
+
+    ax[0].set_title('Full Minimum Spanning Tree', size=16)
+    ax[1].set_title('Trimmed Minimum Spanning Tree', size=16)
+
+plot_mst(model)
+plt.show()
